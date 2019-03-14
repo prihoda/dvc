@@ -4,6 +4,7 @@ import logging
 
 from dvc.command.data_sync import CmdDataBase
 from dvc.utils.compat import str
+import json
 
 
 logger = logging.getLogger(__name__)
@@ -53,7 +54,9 @@ class CmdDataStatus(CmdDataBase):
                 all_tags=self.args.all_tags,
                 with_deps=self.args.with_deps,
             )
-            if st:
+            if self.args.json:
+                print(json.dumps(st, indent=2))
+            elif st:
                 if self.args.quiet:
                     return 1
                 else:

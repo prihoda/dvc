@@ -282,6 +282,14 @@ def add_parser(subparsers, _parent_parser):
         ),
     )
     status_parser.add_argument(
+        "--json",
+        action="store_true",
+        default=False,
+        help=(
+            "Print output as JSON."
+        ),
+    )
+    status_parser.add_argument(
         "-c",
         "--cloud",
         action="store_true",

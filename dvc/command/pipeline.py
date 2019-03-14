@@ -8,7 +8,7 @@ import logging
 
 from dvc.exceptions import DvcException
 from dvc.command.base import CmdBase, fix_subparsers, append_doc_link
-
+import json
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +36,7 @@ class CmdPipelineShow(CmdBase):
             else:
                 logger.info(n)
 
-    def __build_graph(self, target, commands, outs):
+    def __build_graph(self, target, commands, outs, detailed_nodes=False):
         import networkx
         from dvc.stage import Stage
 
@@ -54,7 +54,13 @@ class CmdPipelineShow(CmdBase):
         nodes = []
         for n in G.nodes():
             stage = stages[n]
-            if commands:
+            if detailed_nodes:
+                nodes.append({
+                    'path': stage.relpath,
+                    'outs': [str(o) for o in stage.outs],
+                    'command': stage.cmd
+                })
+            elif commands:
                 if stage.cmd is None:
                     continue
                 nodes.append(stage.cmd)
@@ -115,6 +121,14 @@ class CmdPipelineShow(CmdBase):
             observe_list.pop(0)
         tree.show()
 
+    def _show_json(self, target):
+        nodes, edges = self.__build_graph(target, False, False, detailed_nodes=True)
+
+        print(json.dumps({
+            'nodes': nodes,
+            'edges': edges
+        }, indent=2))
+
     def __write_dot(self, target, commands, outs, filename):
         import networkx
         from networkx.drawing.nx_pydot import write_dot
@@ -147,6 +161,8 @@ class CmdPipelineShow(CmdBase):
                     self._show_dependencies_tree(
                         target, self.args.commands, self.args.outs
                     )
+                elif self.args.json:
+                    self._show_json(target)
                 else:
                     self._show(
                         target,
@@ -229,6 +245,12 @@ def add_parser(subparsers, parent_parser):
         action="store_true",
         default=False,
         help="Output DAG as ASCII.",
+    )
+    pipeline_show_parser.add_argument(
+        "--json",
+        action="store_true",
+        default=False,
+        help="Output DAG as JSON.",
     )
     pipeline_show_parser.add_argument(
         "--dot", help="Write DAG in .dot format."
